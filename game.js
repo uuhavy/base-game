@@ -31,6 +31,11 @@ const joystickStick = document.getElementById('joystick-stick');
 let userWalletAddress = null;
 let username = null;
 
+// ============================================================================
+// ĐÃ NHÚNG PROJECT ID ĐỊNH DANH ỨNG DỤNG CỦA BẠN TRÊN BASE.DEV
+// ============================================================================
+const BASE_BUILDER_CODE = "6a2c3407f51db91a3690bf16"; 
+
 class Player {
     constructor() {
         this.x = WORLD_WIDTH / 2;
@@ -497,7 +502,7 @@ async function initBaseAppFrame() {
     }
 }
 
-// LOGIC ALL-IN-ONE: KÝ VÍ XÁC THỰC RỒI REBOOT VÀO GAME LUÔN
+// LOGIC KHỞI ĐỘNG LẠI & KÝ XÁC THỰC VÍ CÙNG PROJECT ID TOÀN DIỆN
 if(document.getElementById('restart-btn')) {
     document.getElementById('restart-btn').addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -505,13 +510,13 @@ if(document.getElementById('restart-btn')) {
         const statusText = document.getElementById('sign-status');
         const btnReboot = document.getElementById('restart-btn');
 
-        // BƯỚC 1: NẾU ĐANG CHƠI TRÊN TRÌNH DUYỆT THƯỜNG -> KHÔNG CHECK VÍ, VÀO THẲNG GAME LUÔN ĐỂ BẠN TEST TRƠN TRU
+        // BƯỚC 1: Nếu chạy ngoài môi trường dApp (test bằng trình duyệt thường) -> Vào thẳng game
         if (!window.FrameSDK || !window.FrameSDK.context) {
             init();
             return;
         }
 
-        // BƯỚC 2: NẾU CHẠY TRÊN BASE APP VÀ CÓ ĐIỂM SỐ -> KÍCH HOẠT QUY TRÌNH KÝ XÁC THỰC
+        // BƯỚC 2: Nếu có điểm số lớn hơn 0 và chạy trong Base App -> Bắt buộc ký ví xác thực
         if (score > 0) {
             btnReboot.disabled = true;
             if(statusText) {
@@ -520,37 +525,41 @@ if(document.getElementById('restart-btn')) {
             }
 
             try {
-                // Tạo chuỗi mã hóa điểm số an toàn gửi đến ví
-                const messageToSign = `Base Core Universe - Pilot Score Verification\nWallet: ${userWalletAddress}\nScore: ${score}\nTimestamp: ${Date.now()}`;
+                // Đóng gói dữ liệu tin nhắn ký tích hợp Project ID định danh từ base.dev
+                const messageToSign = `Base Core Universe - Pilot Score Verification\n` +
+                                      `Project Name: Base Core Universe\n` +
+                                      `Builder Code: ${BASE_BUILDER_CODE}\n` +
+                                      `Wallet: ${userWalletAddress}\n` +
+                                      `Score: ${score}\n` +
+                                      `Timestamp: ${Date.now()}`;
                 
-                // Gọi ví của Base App bắt buộc ký duyệt
+                // Gọi ví của Base App thực hiện hành động ký duyệt tin nhắn bảo mật
                 const signature = await window.FrameSDK.actions.signMessage({
                     message: messageToSign
                 });
 
                 if (signature) {
-                    console.log("Chữ ký mật on-chain đã xác thực:", signature);
-                    // (Tùy chọn: Tại đây bạn có thể dùng fetch() gửi điểm + signature lên database Server thật)
+                    console.log("Chữ ký mật đã được xác thực thành công:", signature);
                 }
             } catch (err) {
-                console.error("Người dùng từ chối ký ví:", err);
+                console.error("Người dùng từ chối hoặc hủy ký ví:", err);
                 if(statusText) {
                     statusText.innerText = "❌ Bạn đã hủy ký ví! Điểm số lượt này không được lưu.";
                     statusText.style.color = "#ff2a5f";
                 }
                 
-                // Hiển thị hiệu ứng rung lắc báo lỗi
+                // Kích hoạt hiệu ứng rung màn hình báo lỗi giao diện
                 const glowBox = document.querySelector('.glow-box');
                 if(glowBox) {
                     glowBox.style.animation = 'none';
                     setTimeout(() => glowBox.style.animation = 'shake 0.3s', 10);
                 }
                 btnReboot.disabled = false;
-                return; // Ngăn chặn không cho vào game nếu hủy ký
+                return; // Ngăn chặn tuyệt đối không cho chơi lại nếu người dùng nhấn hủy ví
             }
         }
 
-        // BƯỚC 3: QUÉT LẠI TRẠNG THÁI VÍ NGẦM XEM CÒN KHỚP KHÔNG RỒI REBOOT
+        // BƯỚC 3: Đồng bộ và làm sạch dữ liệu trước khi nạp buồng lái lượt mới
         try {
             const context = await window.FrameSDK.context;
             if (context && context.user) {
@@ -561,7 +570,6 @@ if(document.getElementById('restart-btn')) {
             console.error("Lỗi Reboot Wallet Sync:", err);
         }
 
-        // KHỞI CHẠY LƯỢT CHƠI MỚI TOÀN DIỆN
         init();
     });
 }
