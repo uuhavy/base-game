@@ -31,7 +31,6 @@ const joystickStick = document.getElementById('joystick-stick');
 let userWalletAddress = null;
 let username = null;
 
-// PROJECT ID NẰM Ở TIN NHẮN KÝ ĐỂ ĐỒNG BỘ ON-CHAIN ATTRIBUTION
 const BASE_PROJECT_ID = "6a2c3407f51db91a3690bf16"; 
 
 class Player {
@@ -168,7 +167,7 @@ class Enemy {
         ctx.fill();
 
         ctx.beginPath();
-        ctx.arc(this.x - camera.x, this.y - camera.y, this.radius * 0.4, 0, Math.PI * 2);
+        ctx.arc(-1, 0, this.radius * 0.4, 0, Math.PI * 2);
         ctx.fillStyle = '#0f172a';
         ctx.fill();
         ctx.restore();
@@ -473,101 +472,80 @@ function animate() {
 init();
 animate();
 
-// ==================== TÍCH HỢP BASE APP DAPP FRAME SDK V2 ====================
+// ==================== HỆ THỐNG ĐỒNG BỘ SDK KHÔNG CHẶN LUỒNG CHÍNH ====================
 async function initBaseAppFrame() {
-    if (window.FrameSDK) {
+    const walletDisplay = document.getElementById('wallet-display');
+    
+    // Nếu kiểm tra thấy có SDK và có tính năng context
+    if (typeof window !== 'undefined' && window.FrameSDK && window.FrameSDK.context) {
         try {
-            // Khởi động SDK chuẩn không chứa Client ID ngoài luồng
-            window.FrameSDK.actions.ready();
-            const context = await window.FrameSDK.context;
+            if (window.FrameSDK.actions && typeof window.FrameSDK.actions.ready === 'function') {
+                window.FrameSDK.actions.ready();
+            }
+            
+            // Thiết lập Timeout 600ms chống treo lệnh ngầm bất động bộ của WebView di động
+            const contextPromise = window.FrameSDK.context;
+            const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 600));
+            const context = await Promise.race([contextPromise, timeoutPromise]);
             
             if (context && context.user) {
                 userWalletAddress = context.user.custodyAddress || context.user.verifiedAddresses?.[0];
                 username = context.user.username || "Pilot";
 
-                const walletDisplay = document.getElementById('wallet-display');
                 if (walletDisplay) {
                     walletDisplay.innerText = username ? `@${username}` : userWalletAddress.substring(0, 6) + "..." + userWalletAddress.substring(userWalletAddress.length - 4);
                 }
-            } else {
-                if(document.getElementById('wallet-display')) document.getElementById('wallet-display').innerText = "Guest Mode";
+                return;
             }
         } catch (sdkError) {
-            console.error("SDK Base App Error:", sdkError);
-            if(document.getElementById('wallet-display')) document.getElementById('wallet-display').innerText = "Guest Mode";
+            console.error("Lỗi đồng bộ ngầm SDK:", sdkError);
         }
-    } else {
-        if(document.getElementById('wallet-display')) document.getElementById('wallet-display').innerText = "Browser Mode";
+    }
+    
+    if (walletDisplay) {
+        walletDisplay.innerText = (typeof window !== 'undefined' && window.FrameSDK) ? "Base Pilot" : "Browser Mode";
     }
 }
 
-// LOGIC KHỞI ĐỘNG LẠI & KÝ XÁC THỰC VÍ CÙNG BẢO MẬT ĐỊNH DANH 
+// KHẮC PHỤC TRIỆT ĐỂ: LUÔN LUÔN REBOOT ENGINE ĐƯỢC KỂ CẢ KHI LỖI VÍ CHẶN
 if(document.getElementById('restart-btn')) {
     document.getElementById('restart-btn').addEventListener('click', async (e) => {
+        e.preventDefault();
         e.stopPropagation();
         
         const statusText = document.getElementById('sign-status');
         const btnReboot = document.getElementById('restart-btn');
 
-        // Nếu chạy ở trình duyệt thông thường bên ngoài -> Reset thẳng vào game ngay
-        if (!window.FrameSDK || !window.FrameSDK.context) {
+        // BƯỚC 1: Nếu môi trường thiếu tính năng ký tin nhắn (Chạy ngoài trình duyệt thường) -> Hồi sinh luôn
+        if (!window.FrameSDK || !window.FrameSDK.actions || !window.FrameSDK.actions.signMessage) {
             init();
             return;
         }
 
-        // Nếu có điểm số lớn hơn 0 và chạy trong Base App -> Bật ví ký xác thực lưu điểm
+        // BƯỚC 2: Gọi cổng ví thông qua try...catch an toàn để nút bấm không bị treo cứng
         if (score > 0) {
             btnReboot.disabled = true;
             if(statusText) {
-                statusText.innerText = "✍️ Đang gọi ví Base Mainnet ký xác thực lưu điểm...";
+                statusText.innerText = "✍️ Đang gọi ví Base Mainnet ký xác thực...";
                 statusText.style.color = "#00ffff";
             }
 
             try {
-                // Đóng gói dữ liệu tin nhắn ký tích hợp tên game và Project ID định danh an toàn
                 const messageToSign = `Base Core Universe - Pilot Score Verification\n` +
                                       `Project Name: Base Core Universe\n` +
                                       `Base Project ID: ${BASE_PROJECT_ID}\n` +
-                                      `Wallet: ${userWalletAddress}\n` +
+                                      `Wallet: ${userWalletAddress || '0x000'}\n` +
                                       `Score: ${score}\n` +
                                       `Timestamp: ${Date.now()}`;
                 
-                // Gọi ví của Base App thực hiện hành động ký duyệt tin nhắn bảo mật
-                const signature = await window.FrameSDK.actions.signMessage({
-                    message: messageToSign
-                });
-
-                if (signature) {
-                    console.log("Chữ ký mật đã được xác thực thành công:", signature);
-                }
+                await window.FrameSDK.actions.signMessage({ message: messageToSign });
             } catch (err) {
-                console.error("Người dùng từ chối hoặc hủy ký ví:", err);
-                if(statusText) {
-                    statusText.innerText = "❌ Bạn đã hủy ký ví! Điểm số lượt này không được lưu.";
-                    statusText.style.color = "#ff2a5f";
-                }
-                
-                const glowBox = document.querySelector('.glow-box');
-                if(glowBox) {
-                    glowBox.style.animation = 'none';
-                    setTimeout(() => glowBox.style.animation = 'shake 0.3s', 10);
-                }
-                btnReboot.disabled = false;
-                return; // Chặn lại không cho chơi nếu bấm hủy ký ví
+                console.warn("Ký ví lỗi hoặc bị hủy, bỏ qua để hồi sinh game:", err);
             }
         }
 
-        // Cập nhật lại context ví khi bắt đầu màn chơi mới
-        try {
-            const context = await window.FrameSDK.context;
-            if (context && context.user) {
-                userWalletAddress = context.user.custodyAddress || context.user.verifiedAddresses?.[0];
-                username = context.user.username || "Pilot";
-            }
-        } catch (err) {
-            console.error("Lỗi Reboot Wallet Sync:", err);
-        }
-
+        // BƯỚC 3: Mở khóa lại nút bấm và reset game mượt mà
+        btnReboot.disabled = false;
         init();
     });
 }
