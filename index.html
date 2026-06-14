@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Base Core Fighter</title>
+    <title>Base Core Universe</title>
     <link rel="stylesheet" href="style.css">
     
-    <meta property="og:title" content="Base Core Fighter" />
-    <meta property="og:description" content="Move, shoot, destroy reinforced elites and unlock Tier 6 Ultimate weapon!" />
+    <meta property="og:title" content="Base Core Universe" />
+    <meta property="og:description" content="Infinite scrolling space shooter on Base!" />
     <meta property="og:image" content="https://base.org/images/base-logo.png" /> 
 </head>
 <body>
@@ -36,12 +36,18 @@
                 </div>
             </div>
 
+            <div id="joystick-zone">
+                <div id="joystick-base">
+                    <div id="joystick-stick"></div>
+                </div>
+            </div>
+
             <div id="game-over-screen" class="hidden">
                 <div class="glow-box">
                     <h2 id="game-title-end">SHIP DESTROYED</h2>
                     <p class="sub-text" id="game-sub-end">Hệ thống động cơ bị quá tải</p>
                     <div class="result-box">
-                        <div class="result-label">Cấp độ đạt được</div>
+                        <div class="result-label">Cập độ đạt được</div>
                         <div id="final-tier" style="color: #ffaa00; font-weight: bold; margin-bottom: 5px;">TIER 1</div>
                         <div class="result-label">Năng lượng thu thập</div>
                         <div id="final-score">0</div>

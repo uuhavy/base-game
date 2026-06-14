@@ -6,6 +6,7 @@
     box-sizing: border-box;
     user-select: none;
     -webkit-user-select: none;
+    touch-action: none; /* Ngăn chặn cuộn trang mặc định trên Mobile */
 }
 
 body, html {
@@ -70,23 +71,21 @@ canvas {
 
 #score-val {
     color: #0052FF;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 900;
-    text-shadow: 0 0 10px rgba(0, 82, 255, 0.6);
 }
 
 .hp-bar-container, .progress-bar-container {
-    width: 140px;
+    width: 120px;
     height: 10px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 2px;
-    overflow: hidden;
 }
 
 .progress-bar-container {
     width: 100%;
-    max-width: 250px;
+    max-width: 200px;
 }
 
 #hp-bar-fill {
@@ -106,9 +105,8 @@ canvas {
 }
 
 #weapon-status {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 900;
-    letter-spacing: 1px;
 }
 .tier-1 { color: #818cf8; text-shadow: 0 0 8px #818cf8; }
 .tier-2 { color: #38bdf8; text-shadow: 0 0 8px #38bdf8; }
@@ -119,7 +117,38 @@ canvas {
 
 @keyframes pulseGlow {
     from { text-shadow: 0 0 8px #a855f7; }
-    to { text-shadow: 0 0 20px #e879f9, 0 0 30px #a855f7; }
+    to { text-shadow: 0 0 20px #a855f7; }
+}
+
+/* Joystick cho Mobile */
+#joystick-zone {
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    width: 120px;
+    height: 120px;
+    pointer-events: auto;
+    display: none; /* Chỉ hiện trên thiết bị cảm ứng */
+}
+
+#joystick-base {
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    position: relative;
+}
+
+#joystick-stick {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #0052FF, #00ffff);
+    border-radius: 50%;
+    position: absolute;
+    top: 35px;
+    left: 35px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
 }
 
 #game-over-screen {
@@ -144,7 +173,6 @@ canvas {
     padding: 40px;
     border-radius: 16px;
     text-align: center;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     max-width: 380px;
     width: 90%;
 }
@@ -152,7 +180,6 @@ canvas {
 .glow-box h2 {
     font-size: 24px;
     font-weight: 900;
-    letter-spacing: 2px;
     margin-bottom: 4px;
 }
 
@@ -170,16 +197,8 @@ canvas {
     margin-bottom: 24px;
 }
 
-.result-label {
-    font-size: 11px;
-    color: #94a3b8;
-}
-
-#final-score {
-    font-size: 32px;
-    color: #0052FF;
-    font-weight: 900;
-}
+.result-label { font-size: 11px; color: #94a3b8; }
+#final-score { font-size: 32px; color: #0052FF; font-weight: 900; }
 
 #restart-btn {
     width: 100%;
@@ -187,13 +206,16 @@ canvas {
     color: white;
     border: none;
     padding: 14px;
-    font-size: 13px;
     font-family: 'Orbitron', sans-serif;
     font-weight: 700;
     letter-spacing: 2px;
     border-radius: 8px;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(0, 82, 255, 0.4);
 }
 
 .hidden { display: none !important; }
+
+/* Media query phát hiện mobile để bật joystick */
+@media (max-width: 1024px) {
+    #joystick-zone { display: block; }
+}
