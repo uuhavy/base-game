@@ -31,10 +31,8 @@ const joystickStick = document.getElementById('joystick-stick');
 let userWalletAddress = null;
 let username = null;
 
-// ============================================================================
-// ĐÃ NHÚNG PROJECT ID ĐỊNH DANH ỨNG DỤNG CỦA BẠN TRÊN BASE.DEV
-// ============================================================================
-const BASE_BUILDER_CODE = "bc_6a2c3407f51d"; 
+// PROJECT ID NẰM Ở TIN NHẮN KÝ ĐỂ ĐỒNG BỘ ON-CHAIN ATTRIBUTION
+const BASE_PROJECT_ID = "6a2c3407f51db91a3690bf16"; 
 
 class Player {
     constructor() {
@@ -479,6 +477,7 @@ animate();
 async function initBaseAppFrame() {
     if (window.FrameSDK) {
         try {
+            // Khởi động SDK chuẩn không chứa Client ID ngoài luồng
             window.FrameSDK.actions.ready();
             const context = await window.FrameSDK.context;
             
@@ -502,7 +501,7 @@ async function initBaseAppFrame() {
     }
 }
 
-// LOGIC KHỞI ĐỘNG LẠI & KÝ XÁC THỰC VÍ CÙNG PROJECT ID TOÀN DIỆN
+// LOGIC KHỞI ĐỘNG LẠI & KÝ XÁC THỰC VÍ CÙNG BẢO MẬT ĐỊNH DANH 
 if(document.getElementById('restart-btn')) {
     document.getElementById('restart-btn').addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -510,13 +509,13 @@ if(document.getElementById('restart-btn')) {
         const statusText = document.getElementById('sign-status');
         const btnReboot = document.getElementById('restart-btn');
 
-        // BƯỚC 1: Nếu chạy ngoài môi trường dApp (test bằng trình duyệt thường) -> Vào thẳng game
+        // Nếu chạy ở trình duyệt thông thường bên ngoài -> Reset thẳng vào game ngay
         if (!window.FrameSDK || !window.FrameSDK.context) {
             init();
             return;
         }
 
-        // BƯỚC 2: Nếu có điểm số lớn hơn 0 và chạy trong Base App -> Bắt buộc ký ví xác thực
+        // Nếu có điểm số lớn hơn 0 và chạy trong Base App -> Bật ví ký xác thực lưu điểm
         if (score > 0) {
             btnReboot.disabled = true;
             if(statusText) {
@@ -525,10 +524,10 @@ if(document.getElementById('restart-btn')) {
             }
 
             try {
-                // Đóng gói dữ liệu tin nhắn ký tích hợp Project ID định danh từ base.dev
+                // Đóng gói dữ liệu tin nhắn ký tích hợp tên game và Project ID định danh an toàn
                 const messageToSign = `Base Core Universe - Pilot Score Verification\n` +
                                       `Project Name: Base Core Universe\n` +
-                                      `Builder Code: ${BASE_BUILDER_CODE}\n` +
+                                      `Base Project ID: ${BASE_PROJECT_ID}\n` +
                                       `Wallet: ${userWalletAddress}\n` +
                                       `Score: ${score}\n` +
                                       `Timestamp: ${Date.now()}`;
@@ -548,18 +547,17 @@ if(document.getElementById('restart-btn')) {
                     statusText.style.color = "#ff2a5f";
                 }
                 
-                // Kích hoạt hiệu ứng rung màn hình báo lỗi giao diện
                 const glowBox = document.querySelector('.glow-box');
                 if(glowBox) {
                     glowBox.style.animation = 'none';
                     setTimeout(() => glowBox.style.animation = 'shake 0.3s', 10);
                 }
                 btnReboot.disabled = false;
-                return; // Ngăn chặn tuyệt đối không cho chơi lại nếu người dùng nhấn hủy ví
+                return; // Chặn lại không cho chơi nếu bấm hủy ký ví
             }
         }
 
-        // BƯỚC 3: Đồng bộ và làm sạch dữ liệu trước khi nạp buồng lái lượt mới
+        // Cập nhật lại context ví khi bắt đầu màn chơi mới
         try {
             const context = await window.FrameSDK.context;
             if (context && context.user) {
