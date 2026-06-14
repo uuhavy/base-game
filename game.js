@@ -40,7 +40,10 @@ const joystickStick = document.getElementById('joystick-stick');
 let userWalletAddress = null;
 let username = null;
 
-// SỬ DỤNG MÃ PROJECT ID CỦA BẠN LÀM DATA SUFFIX ĐỂ LIÊN KẾT HỆ THỐNG ON-CHAIN ATTRIBUTION
+// ============================================================================
+// ĐÃ CẬP NHẬT ĐỊA CHỈ SMART CONTRACT THẬT VÀ PROJECT ID ON-CHAIN ĐỊNH DANH
+// ============================================================================
+const SNAKE_FEES_CONTRACT = "0x9c3d15Ab52f7DcB2ed3fB275568Ba67dd40aB31f"; 
 const BASE_PROJECT_ID = "6a2c3407f51db91a3690bf16"; 
 
 class Player {
@@ -528,7 +531,7 @@ async function initBaseAppFrame() {
     }
 }
 
-// ==================== CALL LỆNH TRANSACTION MÔ PHỎNG THEO GAME RẮN MẪU ====================
+// ==================== TÍCH HỢP GIAO DỊCH CHẠY THẲNG TRÊN CONTRACT KHÁCH HÀNG THẬT ====================
 if(document.getElementById('restart-btn')) {
     document.getElementById('restart-btn').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -537,44 +540,43 @@ if(document.getElementById('restart-btn')) {
         const statusText = document.getElementById('sign-status');
         const btnReboot = document.getElementById('restart-btn');
 
-        // Nếu chạy ở trình duyệt thường -> Bypass vào thẳng game ngay để test
+        // Nếu chạy ở trình duyệt thường bên ngoài -> Cho chơi test thoải mái không bật ví
         if (!window.FrameSDK || !window.FrameSDK.actions || !window.FrameSDK.actions.sendTransaction) {
             init();
             return;
         }
 
-        // Thực hiện giao dịch thanh toán on-chain qua Base Frame SDK v2 khi bấm Reboot Engine
         btnReboot.disabled = true;
         if(statusText) {
-            statusText.innerText = "🚀 Đang gọi ví Base App xử lý giao dịch...";
+            statusText.innerText = "🚀 Đang kích hoạt ví Base Mainnet xử lý giao dịch...";
             statusText.style.color = "#00ffff";
         }
 
         try {
-            // Hàm payGameEnd() tương tự mã hóa calldata hex chuẩn là 0xef087a36
+            // Mã Selector Hex chuẩn xác 100% của hàm payGameEnd() trong contract bạn vừa deploy
             const functionSelector = "0xef087a36"; 
             
-            // Gọi cổng thanh toán on-chain đẩy thẳng transaction lên mạng lưới Base Mainnet
+            // Gọi dApp Frame bật cửa sổ xác nhận giao dịch thật trên chuỗi Base Mainnet
             const txHash = await window.FrameSDK.actions.sendTransaction({
-                chainId: 8453, // ID mạng của Base Mainnet
-                to: "0x33b8a1c97a760b1e293b1e293b1e293b1e293b1e", // Thay bằng địa chỉ ví/contract thu phí mẫu bạn đang dùng
-                value: "300000000000", // Giá trị 0.0000003 ETH dạng wei giống hệt game rắn mẫu
+                chainId: 8453, // Mạng Base Mainnet thật
+                to: SNAKE_FEES_CONTRACT, // Contract: 0x9c3d15Ab52f7DcB2ed3fB275568Ba67dd40aB31f
+                value: "300000000000", // Gửi 0.0000003 ETH (Dạng Wei) theo đúng yêu cầu contract
                 data: functionSelector,
-                dataSuffix: `0x${BASE_PROJECT_ID}` // Nhúng mã Project ID làm dataSuffix
+                dataSuffix: `0x${BASE_PROJECT_ID}` // Tích hợp mã Project ID của bạn làm On-chain Attribution
             });
 
             if (txHash && statusText) {
-                statusText.innerText = "✅ Giao dịch thành công! Đang nạp lại buồng lái...";
+                statusText.innerText = "✅ Giao dịch thành công! Đang hồi sinh phi thuyền...";
                 statusText.style.color = "#00ff66";
             }
         } catch (err) {
-            console.error("Người dùng hủy giao dịch hoặc ví lỗi:", err);
+            console.error("Giao dịch bị từ chối hoặc lỗi chuỗi:", err);
             if(statusText) {
                 statusText.innerText = "❌ Giao dịch thất bại hoặc bị từ chối.";
                 statusText.style.color = "#ff2a5f";
             }
             btnReboot.disabled = false;
-            return; // Khóa màn hình lại, bắt buộc giao dịch thành công mới cho chơi lượt mới
+            return; // Khóa game, bắt buộc phải giao dịch thành công mới được tiếp tục
         }
 
         btnReboot.disabled = false;
