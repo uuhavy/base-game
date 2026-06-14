@@ -29,13 +29,14 @@ canvas {
     height: 100%;
 }
 
+/* UI LAYER CHÍNH: KHÔNG CHẶN CLICK ĐỂ ĐẢM BẢO CÁC PHẦN TỬ CON TƯƠNG TÁC ĐƯỢC */
 #ui-layer {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none;
+    pointer-events: auto; 
 }
 
 #hud {
@@ -49,6 +50,7 @@ canvas {
     padding: 20px;
     background: linear-gradient(to bottom, rgba(2,6,23,0.9) 0%, rgba(2,6,23,0) 100%);
     z-index: 10;
+    pointer-events: none; /* HUD chỉ hiển thị thông tin, không cần nhận click */
 }
 
 .hud-item {
@@ -67,12 +69,6 @@ canvas {
     color: #64748b;
     letter-spacing: 1.5px;
     font-weight: bold;
-}
-
-#score-val {
-    color: #0052FF;
-    font-size: 16px;
-    font-weight: 900;
 }
 
 .hp-bar-container, .progress-bar-container {
@@ -128,6 +124,7 @@ canvas {
     height: 120px;
     pointer-events: auto;
     display: none;
+    z-index: 5;
 }
 
 #joystick-base {
@@ -163,8 +160,10 @@ canvas {
     align-items: center;
     justify-content: center;
     pointer-events: auto;
+    z-index: 100; /* Đẩy màn hình Game Over lên trên cùng */
 }
 
+/* Đảm bảo toàn bộ hộp thông báo nhận tương tác hoàn hảo */
 .glow-box {
     background: rgba(15, 23, 42, 0.95);
     border: 2px solid #334155;
@@ -175,6 +174,7 @@ canvas {
     max-width: 550px;
     width: 95%;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    pointer-events: auto; 
 }
 
 .glow-box h2 {
@@ -189,7 +189,6 @@ canvas {
     margin-bottom: 20px;
 }
 
-/* Giao diện hai cột Game Over + Leaderboard */
 .game-over-layout {
     display: flex;
     gap: 15px;
@@ -211,34 +210,6 @@ canvas {
 .result-label { 
     font-size: 11px; 
     color: #94a3b8; 
-}
-
-#submit-leaderboard-btn {
-    width: 100%;
-    background: #0052FF;
-    color: white;
-    border: none;
-    padding: 10px;
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
-    font-size: 11px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-#submit-leaderboard-btn:disabled {
-    background: #1e293b;
-    color: #64748b;
-    cursor: not-allowed;
-}
-
-#sign-status {
-    font-size: 10px;
-    margin-top: 8px;
-    text-align: center;
-    font-weight: bold;
-    min-height: 15px;
 }
 
 .leaderboard-box h3 {
@@ -283,6 +254,7 @@ canvas {
     margin-top: 5px;
 }
 
+/* NÚT BẤM CHÍNH - THIẾT LẬP CON TRỎ VÀ QUYỀN CLICK BẬT AUTO */
 #restart-btn {
     width: 100%;
     background: linear-gradient(135deg, #0052FF 0%, #003db3 100%);
@@ -295,6 +267,13 @@ canvas {
     border-radius: 8px;
     cursor: pointer;
     margin-top: 10px;
+    pointer-events: auto; 
+    position: relative;
+    z-index: 105;
+}
+
+#restart-btn:active {
+    transform: scale(0.98);
 }
 
 #wallet-display {
