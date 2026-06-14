@@ -41,7 +41,7 @@ let userWalletAddress = null;
 let username = null;
 
 // ============================================================================
-// ĐÃ CẬP NHẬT ĐỊA CHỈ SMART CONTRACT THẬT VÀ PROJECT ID ON-CHAIN ĐỊNH DANH
+// CẤU HÌNH SMART CONTRACT CHÍNH CHỦ VÀ PROJECT ID ĐÃ ĐƯỢC CHUẨN HÓA
 // ============================================================================
 const SNAKE_FEES_CONTRACT = "0x9c3d15Ab52f7DcB2ed3fB275568Ba67dd40aB31f"; 
 const BASE_PROJECT_ID = "6a2c3407f51db91a3690bf16"; 
@@ -531,7 +531,7 @@ async function initBaseAppFrame() {
     }
 }
 
-// ==================== TÍCH HỢP GIAO DỊCH CHẠY THẲNG TRÊN CONTRACT KHÁCH HÀNG THẬT ====================
+// ==================== KHU VỰC TỐI ƯU GIAO DỊCH THEO CHUẨN CÁC GAME TRÊN BASE ====================
 if(document.getElementById('restart-btn')) {
     document.getElementById('restart-btn').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -540,7 +540,7 @@ if(document.getElementById('restart-btn')) {
         const statusText = document.getElementById('sign-status');
         const btnReboot = document.getElementById('restart-btn');
 
-        // Nếu chạy ở trình duyệt thường bên ngoài -> Cho chơi test thoải mái không bật ví
+        // Nếu chạy ở ngoài môi trường web thông thường -> Cho chơi tiếp luôn để test giao diện
         if (!window.FrameSDK || !window.FrameSDK.actions || !window.FrameSDK.actions.sendTransaction) {
             init();
             return;
@@ -548,39 +548,39 @@ if(document.getElementById('restart-btn')) {
 
         btnReboot.disabled = true;
         if(statusText) {
-            statusText.innerText = "🚀 Đang kích hoạt ví Base Mainnet xử lý giao dịch...";
+            statusText.innerText = "🚀 Đang kích hoạt ví Base Mainnet để thanh toán phí sinh tồn...";
             statusText.style.color = "#00ffff";
         }
 
         try {
-            // Mã Selector Hex chuẩn xác 100% của hàm payGameEnd() trong contract bạn vừa deploy
+            // Chuẩn hóa calldata hex thuần tuý không chứa thuộc tính mở rộng gây xung đột bộ lọc của Frames v2
             const functionSelector = "0xef087a36"; 
             
-            // Gọi dApp Frame bật cửa sổ xác nhận giao dịch thật trên chuỗi Base Mainnet
+            // Kích hoạt chuẩn sendTransaction nguyên bản để ví Base di động bắt trọn tín hiệu
             const txHash = await window.FrameSDK.actions.sendTransaction({
-                chainId: 8453, // Mạng Base Mainnet thật
-                to: SNAKE_FEES_CONTRACT, // Contract: 0x9c3d15Ab52f7DcB2ed3fB275568Ba67dd40aB31f
-                value: "300000000000", // Gửi 0.0000003 ETH (Dạng Wei) theo đúng yêu cầu contract
-                data: functionSelector,
-                dataSuffix: `0x${BASE_PROJECT_ID}` // Tích hợp mã Project ID của bạn làm On-chain Attribution
+                chainId: 8453, // Chuỗi mạng Base Mainnet
+                to: SNAKE_FEES_CONTRACT, // Địa chỉ ví Contract bạn vừa deploy thành công
+                value: "300000000000", // Quy đổi 0.0000003 ETH tương ứng sang dạng Wei dạng Chuỗi
+                data: functionSelector
             });
 
-            if (txHash && statusText) {
-                statusText.innerText = "✅ Giao dịch thành công! Đang hồi sinh phi thuyền...";
-                statusText.style.color = "#00ff66";
+            if (txHash) {
+                if (statusText) {
+                    statusText.innerText = "✅ Thanh toán thành công! Đang hồi sinh tàu không gian...";
+                    statusText.style.color = "#00ff66";
+                }
+                btnReboot.disabled = false;
+                init(); // Khởi động lại màn chơi mới
             }
         } catch (err) {
-            console.error("Giao dịch bị từ chối hoặc lỗi chuỗi:", err);
+            console.error("Lỗi tương tác ví:", err);
             if(statusText) {
-                statusText.innerText = "❌ Giao dịch thất bại hoặc bị từ chối.";
+                // Hiện chi tiết lỗi hệ thống phản hồi trực tiếp lên màn hình trò chơi để debug
+                statusText.innerText = "❌ Lỗi ví: " + (err.message || "Giao dịch bị từ chối hoặc lỗi cấu hình mạng.");
                 statusText.style.color = "#ff2a5f";
             }
             btnReboot.disabled = false;
-            return; // Khóa game, bắt buộc phải giao dịch thành công mới được tiếp tục
         }
-
-        btnReboot.disabled = false;
-        init();
     });
 }
 
