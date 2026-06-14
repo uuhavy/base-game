@@ -17,7 +17,6 @@ let score, hp, gameOver, currentTier, hasWon;
 let player, bullets, enemies, gems, particles;
 let spawnTimer, fireTimer = 0;
 
-// Đối tượng Camera để cuộn màn hình theo người chơi
 const camera = { x: 0, y: 0 };
 
 const keys = {
@@ -25,7 +24,6 @@ const keys = {
     ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false
 };
 
-// Quản lý Joystick cho Mobile
 let isTouchingJoystick = false;
 let joystickVector = { x: 0, y: 0 };
 const joystickBase = document.getElementById('joystick-base');
@@ -38,20 +36,36 @@ class Player {
         this.radius = 16;
         this.color = '#0052FF'; 
         this.speed = 5;
-        this.angle = 0; 
+        this.angle = 0; // Góc quay của tàu (sẽ trùng với hướng bắn)
     }
 
     move() {
-        if (keys.w || keys.ArrowUp) this.y -= this.speed;
-        if (keys.s || keys.ArrowDown) this.y += this.speed;
-        if (keys.a || keys.ArrowLeft) this.x -= this.speed;
-        if (keys.d || keys.ArrowRight) this.x += this.speed;
+        let moveX = 0;
+        let moveY = 0;
 
+        // Tính toán lượng di chuyển từ bàn phím
+        if (keys.w || keys.ArrowUp) moveY -= this.speed;
+        if (keys.s || keys.ArrowDown) moveY += this.speed;
+        if (keys.a || keys.ArrowLeft) moveX -= this.speed;
+        if (keys.d || keys.ArrowRight) moveX += this.speed;
+
+        // Tính toán lượng di chuyển từ Joystick di động
         if (isTouchingJoystick) {
-            this.x += joystickVector.x * this.speed;
-            this.y += joystickVector.y * this.speed;
+            moveX += joystickVector.x * this.speed;
+            moveY += joystickVector.y * this.speed;
         }
 
+        // Thực hiện di chuyển nhân vật
+        this.x += moveX;
+        this.y += moveY;
+
+        // CẬP NHẬT GÓC QUAY: Súng và đầu tàu xoay NGƯỢC LẠI với hướng di chuyển thực tế
+        if (moveX !== 0 || moveY !== 0) {
+            const moveAngle = Math.atan2(moveY, moveX);
+            this.angle = moveAngle + Math.PI; // Cộng 180 độ để quay đầu súng ngược lại hướng chạy
+        }
+
+        // Giới hạn biên giới bản đồ thế giới
         if (this.x < this.radius) this.x = this.radius;
         if (this.x > WORLD_WIDTH - this.radius) this.x = WORLD_WIDTH - this.radius;
         if (this.y < this.radius) this.y = this.radius;
@@ -89,7 +103,7 @@ class Bullet {
         this.radius = 3.5;
         const colors = ['#818cf8', '#38bdf8', '#34d399', '#fbbf24', '#f43f5e', '#a855f7'];
         this.color = colors[currentTier - 1] || '#a855f7';
-        this.speed = 12;
+        this.speed = 13; // Tăng nhẹ tốc độ đạn bay cho mượt hơn
         this.velocity = { x: Math.cos(angle) * this.speed, y: Math.sin(angle) * this.speed };
     }
 
@@ -209,13 +223,7 @@ function createExplosion(x, y, color, count = 10) {
 window.addEventListener('keydown', (e) => { if (e.key in keys) keys[e.key] = true; });
 window.addEventListener('keyup', (e) => { if (e.key in keys) keys[e.key] = false; });
 
-window.addEventListener('mousemove', (e) => {
-    if (gameOver) return;
-    const screenPlayerX = player.x - camera.x;
-    const screenPlayerY = player.y - camera.y;
-    player.angle = Math.atan2(e.clientY - screenPlayerY, e.clientX - screenPlayerX);
-});
-
+// Bỏ hàm xoay theo chuột cũ vì giờ súng sẽ tự động hướng ngược hướng chạy tuyệt đối
 function handleJoystick(e) {
     if (!isTouchingJoystick || gameOver) return;
     const rect = joystickBase.getBoundingClientRect();
@@ -235,7 +243,6 @@ function handleJoystick(e) {
 
     joystickStick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
     joystickVector = { x: deltaX / maxRadius, y: deltaY / maxRadius };
-    player.angle = Math.atan2(deltaY, deltaX);
 }
 
 if(joystickBase) {
@@ -251,13 +258,19 @@ if(joystickBase) {
 function autoFire() {
     if (gameOver || hasWon) return;
     
-    // Đạn bắn ngược góc di chuyển 180 độ (Kiting Mechanics)
-    const fireAngle = player.angle + Math.PI;
+    // Đạn bắn trực tiếp theo hướng góc của player (đã được đảo ngược sẵn trong hàm move)
+    const fireAngle = player.angle;
+
+    // Chỉ khai hỏa xả đạn khi nhân vật thực sự đang di chuyển (để tránh đứng yên xả vô định)
+    const isMoving = keys.w || keys.s || keys.a || keys.d || 
+                     keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight || 
+                     isTouchingJoystick;
+
+    if (!isMoving && currentTier !== 6) return; // Trừ Tier 6 bắn vòng tròn toàn diện khi đứng im
 
     if (currentTier === 1) {
         bullets.push(new Bullet(player.x, player.y, fireAngle));
     } else if (currentTier === 2) {
-        // ĐÃ VÁ LỖI TỌA ĐỘ TIER 2 TẠI ĐÂY
         const offset = 6;
         const bx1 = player.x - Math.sin(fireAngle) * offset;
         const by1 = player.y + Math.cos(fireAngle) * offset;
@@ -364,7 +377,7 @@ function drawSpaceGrid() {
 
 function animate() {
     requestAnimationFrame(animate);
-    ctx.fillStyle = 'rgba(2, 6, 23, 1)'; // Đặt màu nền đậm để xóa vết đạn cũ hoàn toàn
+    ctx.fillStyle = 'rgba(2, 6, 23, 1)'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (gameOver) return;
