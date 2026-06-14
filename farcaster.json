@@ -1,0 +1,16 @@
+{
+  "accountAssociation": {
+    "header": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJmaWQ6ODg0NjI4Iiwib3B0Ijp7ImFkZHJlc3MiOiIweDljM2QxNUFiNTJmN0RjQjJlZDNmQjI3NTU2OGJhNjdkZDQwYUIzMWYifX0",
+    "payload": "eyJkb21haW4iOiJiYXNlLWdhbWUtYWxwaGEudmVyY2VsLmFwcCJ9",
+    "signature": "MHhjYTA1NDI4YTk1YTYwZjZkMmNlZDRmNmE5YWM2OTg3YzU1NDFlODZlNDNmNjYyMWM0NDhlMWFlNmE0NmExNzhiMDFkZDRmZDYwNzI3NDAxODUzMmFlNjkwMjVkOGQ1YmU3NjJjNzNmOGFlNDhjNDlhZTU2OTk0MmZmODJjNjg0YjFi"
+  },
+  "frame": {
+    "version": "1",
+    "name": "Base Core Universe",
+    "iconUrl": "https://base.org/images/base-logo.png",
+    "homeUrl": "https://base-game-alpha.vercel.app/",
+    "imageUrl": "https://base.org/images/base-logo.png",
+    "buttonTitle": "Play Base Core",
+    "webhookUrl": "https://base-game-alpha.vercel.app/api/webhook"
+  }
+}
