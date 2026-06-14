@@ -1,0 +1,9 @@
+{
+  "name": "Base Core Universe",
+  "icon": "https://base.org/images/base-logo.png",
+  "description": "Base Core Universe Game on Base Mainnet",
+  "aboutUrl": "https://base-game-alpha.vercel.app/",
+  "allowedDomains": [
+    "base-game-alpha.vercel.app"
+  ]
+}
