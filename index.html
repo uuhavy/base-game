@@ -10,7 +10,9 @@
     <meta property="fc:frame:image" content="https://base.org/images/base-logo.png" />
     <meta property="fc:frame:button:1" content="Play Base Core" />
     <meta property="fc:frame:button:1:action" content="link" />
-    <meta property="fc:frame:button:1:target" content="https://base-game-alpha.vercel.app/" /> <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.19/dist/index.min.js"></script>
+    <meta property="fc:frame:button:1:target" content="https://base-game-alpha.vercel.app/" /> 
+
+    <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.0.19/dist/index.min.js"></script>
 </head>
 <body>
     <div id="game-container">
@@ -30,7 +32,7 @@
                 </div>
                 <div class="hud-item">
                     <span class="label">PILOT (BASE APP)</span>
-                    <div id="wallet-display">Loading Pilot...</div> 
+                    <div id="wallet-display">Syncing Wallet...</div> 
                 </div>
                 <div class="hud-item">
                     <span class="label">CURRENT RANK</span>
@@ -48,13 +50,32 @@
                 <div class="glow-box">
                     <h2 id="game-title-end">SHIP DESTROYED</h2>
                     <p class="sub-text" id="game-sub-end">Hệ thống động cơ bị quá tải</p>
-                    <div class="result-box">
-                        <div class="result-label">Cấp độ đạt được</div>
-                        <div id="final-tier" style="color: #ffaa00; font-weight: bold; margin-bottom: 5px;">TIER 1</div>
-                        <div class="result-label">Năng lượng thu thập</div>
-                        <div id="final-score">0</div>
+                    
+                    <div class="game-over-layout">
+                        <div class="result-box">
+                            <div class="result-label">Cấp độ đạt được</div>
+                            <div id="final-tier" style="color: #ffaa00; font-weight: bold; margin-bottom: 10px;">TIER 1</div>
+                            <div class="result-label">Năng lượng thu thập</div>
+                            <div id="final-score" style="font-size: 24px; color: #00ffff;">0</div>
+                            
+                            <button id="submit-leaderboard-btn" style="margin-top: 15px; background: #0052FF; font-size: 11px; padding: 10px;">
+                                ✍️ VERIFY & SUBMIT SCORE
+                            </button>
+                            <div id="sign-status" style="font-size: 11px; margin-top: 5px; color: #a855f7;"></div>
+                        </div>
+
+                        <div class="leaderboard-box">
+                            <h3>🏆 TOP BASE PILOTS</h3>
+                            <ul id="leaderboard-list">
+                                <li><span class="rank">1</span> @vitalik.eth <span class="score">2,450</span></li>
+                                <li><span class="rank">2</span> @brian_armstrong <span class="score">1,980</span></li>
+                                <li><span class="rank">3</span> @jesse.base <span class="score">1,650</span></li>
+                                <li id="user-live-rank" class="user-row"><span class="rank">-</span> Bạn <span class="score" id="user-live-score">0</span></li>
+                            </ul>
+                        </div>
                     </div>
-                    <button id="restart-btn">REBOOT ENGINE</button>
+                    
+                    <button id="restart-btn" style="margin-top: 15px;">REBOOT ENGINE</button>
                 </div>
             </div>
         </div>

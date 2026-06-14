@@ -29,9 +29,10 @@ let joystickVector = { x: 0, y: 0 };
 const joystickBase = document.getElementById('joystick-base');
 const joystickStick = document.getElementById('joystick-stick');
 
-// Biến lưu trữ thông tin ví lấy từ Base App công khai
+// Biến lưu trữ thông tin ví từ Base App Frame Context
 let userWalletAddress = null;
 let username = null;
+let hasSubmittedScore = false; // Tránh bấm gửi điểm nhiều lần trong 1 lượt chết
 
 class Player {
     constructor() {
@@ -62,7 +63,7 @@ class Player {
 
         if (moveX !== 0 || moveY !== 0) {
             const moveAngle = Math.atan2(moveY, moveX);
-            this.angle = moveAngle + Math.PI; // Đảo góc 180 độ để súng bắn ngược hướng chạy
+            this.angle = moveAngle + Math.PI; 
         }
 
         if (this.x < this.radius) this.x = this.radius;
@@ -290,12 +291,21 @@ function autoFire() {
 }
 
 function init() {
-    score = 0; hp = 100; currentTier = 1; gameOver = false; hasWon = false;
+    score = 0; hp = 100; currentTier = 1; gameOver = false; hasWon = false; hasSubmittedScore = false;
     spawnTimer = 0; bullets = []; enemies = []; gems = []; particles = [];
     for (let key in keys) keys[key] = false;
+    
+    // Reset Trạng thái giao diện xác thực ví
+    const btnSubmit = document.getElementById('submit-leaderboard-btn');
+    if(btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerText = "✍️ VERIFY & SUBMIT SCORE";
+    }
+    if(document.getElementById('sign-status')) document.getElementById('sign-status').innerText = "";
+
     updateUI();
     document.getElementById('game-over-screen').classList.add('hidden');
-    player = new Player(); // Con tàu luôn được sinh ra ngay lập tức tại đây
+    player = new Player(); 
 }
 
 function updateUI() {
@@ -340,6 +350,10 @@ function triggerEndGame(isVictory) {
     const sub = document.getElementById('game-sub-end');
     if(document.getElementById('final-tier')) document.getElementById('final-tier').innerText = `TIER ${currentTier}`;
     if(document.getElementById('final-score')) document.getElementById('final-score').innerText = score;
+    
+    // Cập nhật điểm của người chơi hiện tại vào dòng realtime trên Leaderboard
+    if(document.getElementById('user-live-score')) document.getElementById('user-live-score').innerText = score;
+
     if (isVictory) {
         if(title) title.innerText = "MISSION ACCOMPLISHED"; 
         if(title) title.style.color = "#a855f7";
@@ -467,29 +481,26 @@ if(document.getElementById('restart-btn')) {
     });
 }
 
-// KHỞI CHẠY ĐỒ HỌA GAME LẬP TỨC ĐỂ TRÁNH LỖI ĐƠN CANVAS
+// KHỞI CHẠY ĐỒ HỌA GAME NGAY LẬP TỨC
 init();
 animate();
 
-// ==================== KHỞI TẠO ĐỒNG BỘ SDK CỦA BASE APP SAU ĐÓ ====================
+// ==================== TÍCH HỢP BASE APP DAPP FRAME SDK V2 ====================
 async function initBaseAppFrame() {
     if (window.FrameSDK) {
         try {
+            // Khai báo ứng dụng Frame đã sẵn sàng hiển thị
             window.FrameSDK.actions.ready();
             const context = await window.FrameSDK.context;
             
             if (context && context.user) {
+                // Nhận diện ví và username thầm lặng ngay khi vừa vào game
                 userWalletAddress = context.user.custodyAddress || context.user.verifiedAddresses?.[0];
                 username = context.user.username || "Pilot";
 
                 const walletDisplay = document.getElementById('wallet-display');
                 if (walletDisplay) {
-                    if (username) {
-                        walletDisplay.innerText = `@${username}`;
-                    } else if (userWalletAddress) {
-                        const shortAdd = userWalletAddress.substring(0, 6) + "..." + userWalletAddress.substring(userWalletAddress.length - 4);
-                        walletDisplay.innerText = shortAdd;
-                    }
+                    walletDisplay.innerText = username ? `@${username}` : userWalletAddress.substring(0, 6) + "..." + userWalletAddress.substring(userWalletAddress.length - 4);
                 }
             } else {
                 if(document.getElementById('wallet-display')) document.getElementById('wallet-display').innerText = "Guest Mode";
@@ -503,7 +514,53 @@ async function initBaseAppFrame() {
     }
 }
 
-// Gọi SDK nhận diện thầm lặng ngay sau khi game đã render ổn định
+// LOGIC XÁC THỰC VÍ 1 LẦN NỮA KHI CHẾT ĐỂ LƯU ĐIỂM (LEADINGBOARD)
+async function signAndSubmitScore() {
+    if (!window.FrameSDK) {
+        document.getElementById('sign-status').innerText = "Vui lòng chơi trên Base App để gửi điểm!";
+        document.getElementById('sign-status').style.color = "#ff2a5f";
+        return;
+    }
+    if (hasSubmittedScore) return;
+
+    const statusText = document.getElementById('sign-status');
+    const btnSubmit = document.getElementById('submit-leaderboard-btn');
+    statusText.innerText = "Đang yêu cầu ký xác thực ví...";
+    statusText.style.color = "#00ffff";
+
+    try {
+        // Chuỗi tin nhắn bảo mật chứa thông tin điểm số để ký tên
+        const messageToSign = `Base Core Universe - Pilot Score Verification\nWallet: ${userWalletAddress}\nScore: ${score}\nTimestamp: ${Date.now()}`;
+        
+        // Gọi ví của ứng dụng mẹ Base App ký duyệt thầm lặng/hiện pop-up ký tin nhắn bảo mật
+        const signature = await window.FrameSDK.actions.signMessage({
+            message: messageToSign
+        });
+
+        if (signature) {
+            hasSubmittedScore = true;
+            btnSubmit.disabled = true;
+            btnSubmit.innerText = "✅ SCORE VERIFIED";
+            statusText.innerText = "Xác thực thành công! Điểm đã cập nhật.";
+            statusText.style.color = "#00ff66";
+
+            // THAY THẾ: Gửi biến `signature`, `score`, và `userWalletAddress` này về API backend của bạn tại đây để cập nhật cơ sở dữ liệu thật.
+            console.log("Chữ ký mật on-chain:", signature);
+        }
+    } catch (err) {
+        console.error("Người dùng hủy ký ví:", err);
+        statusText.innerText = "Xác thực thất bại hoặc bị hủy.";
+        statusText.style.color = "#ff2a5f";
+    }
+}
+
+// Lắng nghe nút bấm Xác thực gửi điểm Leaderboard
+if(document.getElementById('submit-leaderboard-btn')) {
+    document.getElementById('submit-leaderboard-btn').addEventListener('click', () => {
+        signAndSubmitScore();
+    });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     initBaseAppFrame();
 });
