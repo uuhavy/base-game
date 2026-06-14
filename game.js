@@ -34,7 +34,7 @@ let username = null;
 // ============================================================================
 // ĐÃ NHÚNG PROJECT ID ĐỊNH DANH ỨNG DỤNG CỦA BẠN TRÊN BASE.DEV
 // ============================================================================
-const BASE_BUILDER_CODE = "6a2c3407f51db91a3690bf16"; 
+const BASE_BUILDER_CODE = "bc_6a2c3407f51d"; 
 
 class Player {
     constructor() {
