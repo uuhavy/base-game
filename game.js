@@ -12,9 +12,18 @@ const WORLD_WIDTH = 3000;
 const WORLD_HEIGHT = 2000;
 const TIER_THRESHOLDS = [50, 150, 350, 700, 1200, 2000];
 
-let score, hp, gameOver, currentTier, hasWon;
-let player, bullets, enemies, gems, particles;
-let spawnTimer, fireTimer = 0;
+let score = 0;
+let hp = 100;
+let gameOver = false;
+let hasWon = false;
+let currentTier = 1;
+let player = null;
+let bullets = [];
+let enemies = [];
+let gems = [];
+let particles = [];
+let spawnTimer = 0;
+let fireTimer = 0;
 
 const camera = { x: 0, y: 0 };
 
@@ -128,7 +137,10 @@ class Enemy {
         this.x = Math.random() * WORLD_WIDTH;
         this.y = Math.random() * WORLD_HEIGHT;
 
-        while (Math.hypot(player.x - this.x, player.y - this.y) < 400) {
+        let targetX = player ? player.x : WORLD_WIDTH / 2;
+        let targetY = player ? player.y : WORLD_HEIGHT / 2;
+
+        while (Math.hypot(targetX - this.x, targetY - this.y) < 400) {
             this.x = Math.random() * WORLD_WIDTH;
             this.y = Math.random() * WORLD_HEIGHT;
         }
@@ -151,6 +163,7 @@ class Enemy {
     }
 
     update() {
+        if (!player) return;
         const angle = Math.atan2(player.y - this.y, player.x - this.x);
         this.x += Math.cos(angle) * this.speed;
         this.y += Math.sin(angle) * this.speed;
@@ -254,7 +267,7 @@ if(joystickBase) {
 }
 
 function autoFire() {
-    if (gameOver || hasWon) return;
+    if (gameOver || hasWon || !player) return;
     const fireAngle = player.angle;
     const isMoving = keys.w || keys.s || keys.a || keys.d || 
                      keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight || 
@@ -289,8 +302,18 @@ function autoFire() {
 }
 
 function init() {
-    score = 0; hp = 100; currentTier = 1; gameOver = false; hasWon = false;
-    spawnTimer = 0; bullets = []; enemies = []; gems = []; particles = [];
+    score = 0; 
+    hp = 100; 
+    currentTier = 1; 
+    gameOver = false; 
+    hasWon = false;
+    spawnTimer = 0; 
+    fireTimer = 0;
+    bullets = []; 
+    enemies = []; 
+    gems = []; 
+    particles = [];
+    
     for (let key in keys) keys[key] = false;
     
     if(document.getElementById('sign-status')) document.getElementById('sign-status').innerText = "";
@@ -301,9 +324,9 @@ function init() {
         btnReboot.innerText = "REBOOT ENGINE & SAVE SCORE";
     }
 
+    player = new Player(); 
     updateUI();
     document.getElementById('game-over-screen').classList.add('hidden');
-    player = new Player(); 
 }
 
 function updateUI() {
@@ -337,7 +360,7 @@ function checkLevelUp() {
     }
     if (score >= TIER_THRESHOLDS[currentTier - 1]) {
         currentTier++;
-        createExplosion(player.x, player.y, '#00ffff', 35);
+        if (player) createExplosion(player.x, player.y, '#00ffff', 35);
         updateUI();
     }
 }
@@ -384,7 +407,7 @@ function animate() {
     ctx.fillStyle = 'rgba(2, 6, 23, 1)'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (gameOver) return;
+    if (gameOver || !player) return;
 
     camera.x = player.x - canvas.width / 2;
     camera.y = player.y - canvas.height / 2;
@@ -469,21 +492,20 @@ function animate() {
     });
 }
 
+// BẢO ĐẢM KHỞI CHẠY ĐÚNG THỨ TỰ THỜI GIAN
 init();
 animate();
 
-// ==================== HỆ THỐNG ĐỒNG BỘ SDK KHÔNG CHẶN LUỒNG CHÍNH ====================
+// ==================== TÍCH HỢP BASE APP DAPP FRAME SDK V2 ====================
 async function initBaseAppFrame() {
     const walletDisplay = document.getElementById('wallet-display');
     
-    // Nếu kiểm tra thấy có SDK và có tính năng context
     if (typeof window !== 'undefined' && window.FrameSDK && window.FrameSDK.context) {
         try {
             if (window.FrameSDK.actions && typeof window.FrameSDK.actions.ready === 'function') {
                 window.FrameSDK.actions.ready();
             }
             
-            // Thiết lập Timeout 600ms chống treo lệnh ngầm bất động bộ của WebView di động
             const contextPromise = window.FrameSDK.context;
             const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 600));
             const context = await Promise.race([contextPromise, timeoutPromise]);
@@ -507,7 +529,6 @@ async function initBaseAppFrame() {
     }
 }
 
-// KHẮC PHỤC TRIỆT ĐỂ: LUÔN LUÔN REBOOT ENGINE ĐƯỢC KỂ CẢ KHI LỖI VÍ CHẶN
 if(document.getElementById('restart-btn')) {
     document.getElementById('restart-btn').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -516,13 +537,11 @@ if(document.getElementById('restart-btn')) {
         const statusText = document.getElementById('sign-status');
         const btnReboot = document.getElementById('restart-btn');
 
-        // BƯỚC 1: Nếu môi trường thiếu tính năng ký tin nhắn (Chạy ngoài trình duyệt thường) -> Hồi sinh luôn
         if (!window.FrameSDK || !window.FrameSDK.actions || !window.FrameSDK.actions.signMessage) {
             init();
             return;
         }
 
-        // BƯỚC 2: Gọi cổng ví thông qua try...catch an toàn để nút bấm không bị treo cứng
         if (score > 0) {
             btnReboot.disabled = true;
             if(statusText) {
@@ -540,11 +559,10 @@ if(document.getElementById('restart-btn')) {
                 
                 await window.FrameSDK.actions.signMessage({ message: messageToSign });
             } catch (err) {
-                console.warn("Ký ví lỗi hoặc bị hủy, bỏ qua để hồi sinh game:", err);
+                console.warn("Bỏ qua lỗi ký ví để giữ trải nghiệm mượt mà cho người chơi:", err);
             }
         }
 
-        // BƯỚC 3: Mở khóa lại nút bấm và reset game mượt mà
         btnReboot.disabled = false;
         init();
     });
