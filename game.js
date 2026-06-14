@@ -402,12 +402,18 @@ function drawSpaceGrid() {
     }
 }
 
+// BẢO VỆ VÒNG LẶP RENDER: KHÔNG ĐỂ CRASH KHI BIẾN CHƯA SẴN SÀNG
 function animate() {
     requestAnimationFrame(animate);
+    
+    // Luôn luôn clear nền để tránh mất HUD hoặc nháy màn hình
     ctx.fillStyle = 'rgba(2, 6, 23, 1)'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (gameOver || !player) return;
+    if (gameOver || !player) {
+        drawSpaceGrid(); // Vẽ grid nền tĩnh kể cả khi chưa chơi để không bị trống màn hình
+        return;
+    }
 
     camera.x = player.x - canvas.width / 2;
     camera.y = player.y - canvas.height / 2;
@@ -492,20 +498,19 @@ function animate() {
     });
 }
 
-// BẢO ĐẢM KHỞI CHẠY ĐÚNG THỨ TỰ THỜI GIAN
+// KHỞI TẠO ĐÚNG TRÌNH TỰ AN TOÀN TUYỆT ĐỐI
+player = new Player(); 
 init();
 animate();
 
 // ==================== TÍCH HỢP BASE APP DAPP FRAME SDK V2 ====================
 async function initBaseAppFrame() {
     const walletDisplay = document.getElementById('wallet-display');
-    
     if (typeof window !== 'undefined' && window.FrameSDK && window.FrameSDK.context) {
         try {
             if (window.FrameSDK.actions && typeof window.FrameSDK.actions.ready === 'function') {
                 window.FrameSDK.actions.ready();
             }
-            
             const contextPromise = window.FrameSDK.context;
             const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 600));
             const context = await Promise.race([contextPromise, timeoutPromise]);
@@ -513,7 +518,6 @@ async function initBaseAppFrame() {
             if (context && context.user) {
                 userWalletAddress = context.user.custodyAddress || context.user.verifiedAddresses?.[0];
                 username = context.user.username || "Pilot";
-
                 if (walletDisplay) {
                     walletDisplay.innerText = username ? `@${username}` : userWalletAddress.substring(0, 6) + "..." + userWalletAddress.substring(userWalletAddress.length - 4);
                 }
@@ -523,12 +527,12 @@ async function initBaseAppFrame() {
             console.error("Lỗi đồng bộ ngầm SDK:", sdkError);
         }
     }
-    
     if (walletDisplay) {
         walletDisplay.innerText = (typeof window !== 'undefined' && window.FrameSDK) ? "Base Pilot" : "Browser Mode";
     }
 }
 
+// THIẾT LẬP LẮT NGẦM LỖI TRÁNH TREO NÚT BẤM
 if(document.getElementById('restart-btn')) {
     document.getElementById('restart-btn').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -559,7 +563,7 @@ if(document.getElementById('restart-btn')) {
                 
                 await window.FrameSDK.actions.signMessage({ message: messageToSign });
             } catch (err) {
-                console.warn("Bỏ qua lỗi ký ví để giữ trải nghiệm mượt mà cho người chơi:", err);
+                console.warn("Bỏ qua lỗi để hồi sinh game:", err);
             }
         }
 
