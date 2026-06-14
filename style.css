@@ -1,0 +1,98 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #00112c;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, #001535 0%, #000814 100%);
+}
+
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Cho phép click xuyên qua UI vào canvas */
+}
+
+#score-board {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: #0052FF; /* Màu xanh đặc trưng của Base */
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0, 82, 255, 0.5);
+    font-family: monospace;
+}
+
+#game-over-screen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 8, 20, 0.95);
+    border: 2px solid #0052FF;
+    padding: 30px;
+    text-align: center;
+    border-radius: 12px;
+    color: white;
+    pointer-events: auto; /* Bật lại click để bấm nút Restart */
+    box-shadow: 0 0 30px rgba(0, 82, 255, 0.3);
+    min-width: 280px;
+}
+
+#game-over-screen h2 {
+    color: #ff3b3b;
+    margin-bottom: 10px;
+    font-size: 28px;
+    letter-spacing: 2px;
+}
+
+#game-over-screen p {
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: #8a9fc2;
+}
+
+#restart-btn {
+    background: #0052FF;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#restart-btn:hover {
+    background: #0045d8;
+    box-shadow: 0 0 15px rgba(0, 82, 255, 0.6);
+}
+
+.hidden {
+    display: none !important;
+}

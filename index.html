@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Base Space Core - Mini Game</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <meta property="og:title" content="Base Space Core" />
+    <meta property="og:description" content="Protect the Base Core and collect on-chain energy!" />
+    <meta property="og:image" content="https://base.org/images/base-logo.png" /> 
+</head>
+<body>
+    <div id="game-container">
+        <div id="ui-layer">
+            <div id="score-board">ENERGY: <span id="score-val">0</span></div>
+            <div id="game-over-screen" class="hidden">
+                <h2>CORE DESTROYED</h2>
+                <p>You collected <span id="final-score">0</span> Energy Gems</p>
+                <button id="restart-btn">RESTART ENGINE</button>
+            </div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
