@@ -8,7 +8,6 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// KÍCH THƯỚC BẢN ĐỒ KHÔNG GIAN
 const WORLD_WIDTH = 3000;
 const WORLD_HEIGHT = 2000;
 const TIER_THRESHOLDS = [50, 150, 350, 700, 1200, 2000];
@@ -29,10 +28,8 @@ let joystickVector = { x: 0, y: 0 };
 const joystickBase = document.getElementById('joystick-base');
 const joystickStick = document.getElementById('joystick-stick');
 
-// Biến lưu trữ thông tin ví từ Base App Frame Context
 let userWalletAddress = null;
 let username = null;
-let hasSubmittedScore = false; 
 
 class Player {
     constructor() {
@@ -290,16 +287,17 @@ function autoFire() {
 }
 
 function init() {
-    score = 0; hp = 100; currentTier = 1; gameOver = false; hasWon = false; hasSubmittedScore = false;
+    score = 0; hp = 100; currentTier = 1; gameOver = false; hasWon = false;
     spawnTimer = 0; bullets = []; enemies = []; gems = []; particles = [];
     for (let key in keys) keys[key] = false;
     
-    const btnSubmit = document.getElementById('submit-leaderboard-btn');
-    if(btnSubmit) {
-        btnSubmit.disabled = false;
-        btnSubmit.innerText = "✍️ VERIFY & SUBMIT SCORE";
-    }
     if(document.getElementById('sign-status')) document.getElementById('sign-status').innerText = "";
+    
+    const btnReboot = document.getElementById('restart-btn');
+    if(btnReboot) {
+        btnReboot.disabled = false;
+        btnReboot.innerText = "REBOOT ENGINE & SAVE SCORE";
+    }
 
     updateUI();
     document.getElementById('game-over-screen').classList.add('hidden');
@@ -469,7 +467,6 @@ function animate() {
     });
 }
 
-// KHỞI CHẠY ĐỒ HỌA GAME NGAY LẬP TỨC
 init();
 animate();
 
@@ -500,85 +497,71 @@ async function initBaseAppFrame() {
     }
 }
 
-// XÁC THỰC VÍ GỬI ĐIỂM LEADERBOARD
-async function signAndSubmitScore() {
-    if (!window.FrameSDK) {
-        document.getElementById('sign-status').innerText = "Vui lòng chơi trên Base App để gửi điểm!";
-        document.getElementById('sign-status').style.color = "#ff2a5f";
-        return;
-    }
-    if (hasSubmittedScore) return;
-
-    const statusText = document.getElementById('sign-status');
-    const btnSubmit = document.getElementById('submit-leaderboard-btn');
-    statusText.innerText = "Đang yêu cầu ký xác thực ví Base...";
-    statusText.style.color = "#00ffff";
-
-    try {
-        const messageToSign = `Base Core Universe - Pilot Score Verification\nWallet: ${userWalletAddress}\nScore: ${score}\nTimestamp: ${Date.now()}`;
-        
-        const signature = await window.FrameSDK.actions.signMessage({
-            message: messageToSign
-        });
-
-        if (signature) {
-            hasSubmittedScore = true;
-            btnSubmit.disabled = true;
-            btnSubmit.innerText = "✅ SCORE VERIFIED";
-            statusText.innerText = "Xác thực thành công! Điểm đã cập nhật.";
-            statusText.style.color = "#00ff66";
-            console.log("Chữ ký mật on-chain:", signature);
-        }
-    } catch (err) {
-        console.error("Người dùng hủy ký ví:", err);
-        statusText.innerText = "Xác thực thất bại hoặc bị hủy.";
-        statusText.style.color = "#ff2a5f";
-    }
-}
-
-if(document.getElementById('submit-leaderboard-btn')) {
-    document.getElementById('submit-leaderboard-btn').addEventListener('click', () => {
-        signAndSubmitScore();
-    });
-}
-
-// KHÓA VÀ XÁC THỰC LẠI VÍ KHI BẤM NÚT REBOOT ENGINE
+// LOGIC ALL-IN-ONE: KÝ VÍ XÁC THỰC RỒI REBOOT VÀO GAME LUÔN
 if(document.getElementById('restart-btn')) {
     document.getElementById('restart-btn').addEventListener('click', async (e) => {
         e.stopPropagation();
+        
+        const statusText = document.getElementById('sign-status');
+        const btnReboot = document.getElementById('restart-btn');
 
-        // 1. CHẶN NẾU CHƯA KÝ XÁC THỰC ĐIỂM SỐ
-        if (window.FrameSDK && !hasSubmittedScore && score > 0) {
-            const statusText = document.getElementById('sign-status');
-            if (statusText) {
-                statusText.innerText = "⚠️ Bạn cần bấm 'VERIFY & SUBMIT SCORE' để lưu điểm trước khi chơi lượt mới!";
-                statusText.style.color = "#ff2a5f";
-            }
-            const glowBox = document.querySelector('.glow-box');
-            if(glowBox) {
-                glowBox.style.animation = 'none';
-                setTimeout(() => glowBox.style.animation = 'shake 0.3s', 10);
-            }
-            return; 
+        // BƯỚC 1: NẾU ĐANG CHƠI TRÊN TRÌNH DUYỆT THƯỜNG -> KHÔNG CHECK VÍ, VÀO THẲNG GAME LUÔN ĐỂ BẠN TEST TRƠN TRU
+        if (!window.FrameSDK || !window.FrameSDK.context) {
+            init();
+            return;
         }
 
-        // 2. QUÉT LẠI TRẠNG THÁI VÍ BASE MAINNET XEM CÒN HỢP LỆ KHÔNG
-        if (window.FrameSDK) {
+        // BƯỚC 2: NẾU CHẠY TRÊN BASE APP VÀ CÓ ĐIỂM SỐ -> KÍCH HOẠT QUY TRÌNH KÝ XÁC THỰC
+        if (score > 0) {
+            btnReboot.disabled = true;
+            if(statusText) {
+                statusText.innerText = "✍️ Đang gọi ví Base Mainnet ký xác thực lưu điểm...";
+                statusText.style.color = "#00ffff";
+            }
+
             try {
-                const context = await window.FrameSDK.context;
-                if (!context || !context.user) {
-                    alert("Không tìm thấy thông tin ví Base App!");
-                    return;
+                // Tạo chuỗi mã hóa điểm số an toàn gửi đến ví
+                const messageToSign = `Base Core Universe - Pilot Score Verification\nWallet: ${userWalletAddress}\nScore: ${score}\nTimestamp: ${Date.now()}`;
+                
+                // Gọi ví của Base App bắt buộc ký duyệt
+                const signature = await window.FrameSDK.actions.signMessage({
+                    message: messageToSign
+                });
+
+                if (signature) {
+                    console.log("Chữ ký mật on-chain đã xác thực:", signature);
+                    // (Tùy chọn: Tại đây bạn có thể dùng fetch() gửi điểm + signature lên database Server thật)
                 }
+            } catch (err) {
+                console.error("Người dùng từ chối ký ví:", err);
+                if(statusText) {
+                    statusText.innerText = "❌ Bạn đã hủy ký ví! Điểm số lượt này không được lưu.";
+                    statusText.style.color = "#ff2a5f";
+                }
+                
+                // Hiển thị hiệu ứng rung lắc báo lỗi
+                const glowBox = document.querySelector('.glow-box');
+                if(glowBox) {
+                    glowBox.style.animation = 'none';
+                    setTimeout(() => glowBox.style.animation = 'shake 0.3s', 10);
+                }
+                btnReboot.disabled = false;
+                return; // Ngăn chặn không cho vào game nếu hủy ký
+            }
+        }
+
+        // BƯỚC 3: QUÉT LẠI TRẠNG THÁI VÍ NGẦM XEM CÒN KHỚP KHÔNG RỒI REBOOT
+        try {
+            const context = await window.FrameSDK.context;
+            if (context && context.user) {
                 userWalletAddress = context.user.custodyAddress || context.user.verifiedAddresses?.[0];
                 username = context.user.username || "Pilot";
-            } catch (err) {
-                console.error("Lỗi Reboot Wallet Sync:", err);
-                return;
             }
+        } catch (err) {
+            console.error("Lỗi Reboot Wallet Sync:", err);
         }
 
-        // 3. OK -> KHỞI CHẠY LƯỢT MỚI
+        // KHỞI CHẠY LƯỢT CHƠI MỚI TOÀN DIỆN
         init();
     });
 }
