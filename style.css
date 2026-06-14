@@ -1,7 +1,199 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #020617;
+    font-family: 'Orbitron', sans-serif;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+#hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(to bottom, rgba(2,6,23,0.9) 0%, rgba(2,6,23,0) 100%);
+    z-index: 10;
+}
+
+.hud-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.center-hud {
+    flex-grow: 0.3;
+    align-items: center;
+}
+
+.hud-item .label {
+    font-size: 9px;
+    color: #64748b;
+    letter-spacing: 1.5px;
+    font-weight: bold;
+}
+
+#score-val {
+    color: #0052FF;
+    font-size: 16px;
+    font-weight: 900;
+}
+
+.hp-bar-container, .progress-bar-container {
+    width: 120px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+}
+
+.progress-bar-container {
+    width: 100%;
+    max-width: 200px;
+}
+
+#hp-bar-fill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #ff2a5f, #ff7e40);
+    box-shadow: 0 0 8px #ff2a5f;
+    transition: width 0.1s ease-out;
+}
+
+#progress-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #0052FF, #00ffff);
+    box-shadow: 0 0 8px #00ffff;
+    transition: width 0.3s ease-out;
+}
+
+#weapon-status {
+    font-size: 14px;
+    font-weight: 900;
+}
+.tier-1 { color: #818cf8; text-shadow: 0 0 8px #818cf8; }
+.tier-2 { color: #38bdf8; text-shadow: 0 0 8px #38bdf8; }
+.tier-3 { color: #34d399; text-shadow: 0 0 8px #34d399; }
+.tier-4 { color: #fbbf24; text-shadow: 0 0 8px #fbbf24; }
+.tier-5 { color: #f43f5e; text-shadow: 0 0 8px #f43f5e; }
+.tier-6 { color: #a855f7; text-shadow: 0 0 12px #a855f7; animation: pulseGlow 1.5s infinite alternate; }
+
+@keyframes pulseGlow {
+    from { text-shadow: 0 0 8px #a855f7; }
+    to { text-shadow: 0 0 20px #a855f7; }
+}
+
+#joystick-zone {
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    width: 120px;
+    height: 120px;
+    pointer-events: auto;
+    display: none;
+}
+
+#joystick-base {
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    position: relative;
+}
+
+#joystick-stick {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #0052FF, #00ffff);
+    border-radius: 50%;
+    position: absolute;
+    top: 35px;
+    left: 35px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+}
+
+#game-over-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(2, 6, 23, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}
+
+.glow-box {
+    background: rgba(15, 23, 42, 0.95);
+    border: 2px solid #334155;
+    border-top: 4px solid #0052FF;
+    padding: 35px;
+    border-radius: 16px;
+    text-align: center;
+    max-width: 550px;
+    width: 95%;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.glow-box h2 {
+    font-size: 24px;
+    font-weight: 900;
+    margin-bottom: 4px;
+}
+
+.sub-text {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 20px;
+}
+
+/* Giao diện hai cột Game Over + Leaderboard */
 .game-over-layout {
     display: flex;
-    gap: 20px;
-    margin: 20px 0;
+    gap: 15px;
+    margin: 15px 0;
     text-align: left;
 }
 
@@ -11,11 +203,47 @@
     border: 1px solid #1e293b;
     padding: 15px;
     border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.result-label { 
+    font-size: 11px; 
+    color: #94a3b8; 
+}
+
+#submit-leaderboard-btn {
+    width: 100%;
+    background: #0052FF;
+    color: white;
+    border: none;
+    padding: 10px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#submit-leaderboard-btn:disabled {
+    background: #1e293b;
+    color: #64748b;
+    cursor: not-allowed;
+}
+
+#sign-status {
+    font-size: 10px;
+    margin-top: 8px;
+    text-align: center;
+    font-weight: bold;
+    min-height: 15px;
 }
 
 .leaderboard-box h3 {
     margin: 0 0 10px 0;
-    font-size: 14px;
+    font-size: 12px;
     color: #00ffff;
     text-align: center;
     letter-spacing: 1px;
@@ -25,7 +253,7 @@
     list-style: none;
     padding: 0;
     margin: 0;
-    font-size: 12px;
+    font-size: 11px;
 }
 
 #leaderboard-list li {
@@ -39,7 +267,6 @@
 #leaderboard-list li .rank {
     color: #ffaa00;
     font-weight: bold;
-    margin-right: 5px;
 }
 
 #leaderboard-list li .score {
@@ -56,9 +283,37 @@
     margin-top: 5px;
 }
 
-/* Đảm bảo responsive mượt trên màn hình dọc điện thoại */
+#restart-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #0052FF 0%, #003db3 100%);
+    color: white;
+    border: none;
+    padding: 14px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    letter-spacing: 2px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+#wallet-display {
+    color: #00ffff;
+    font-size: 13px;
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
+
+@media (max-width: 1024px) {
+    #joystick-zone { display: block; }
+}
+
 @media (max-width: 600px) {
-    .game-over-layout {
-        flex-direction: column;
-    }
+    .game-over-layout { flex-direction: column; }
 }

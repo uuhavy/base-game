@@ -32,7 +32,7 @@ const joystickStick = document.getElementById('joystick-stick');
 // Biến lưu trữ thông tin ví từ Base App Frame Context
 let userWalletAddress = null;
 let username = null;
-let hasSubmittedScore = false; // Tránh bấm gửi điểm nhiều lần trong 1 lượt chết
+let hasSubmittedScore = false; 
 
 class Player {
     constructor() {
@@ -256,7 +256,6 @@ if(joystickBase) {
 
 function autoFire() {
     if (gameOver || hasWon) return;
-    
     const fireAngle = player.angle;
     const isMoving = keys.w || keys.s || keys.a || keys.d || 
                      keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight || 
@@ -295,7 +294,6 @@ function init() {
     spawnTimer = 0; bullets = []; enemies = []; gems = []; particles = [];
     for (let key in keys) keys[key] = false;
     
-    // Reset Trạng thái giao diện xác thực ví
     const btnSubmit = document.getElementById('submit-leaderboard-btn');
     if(btnSubmit) {
         btnSubmit.disabled = false;
@@ -350,8 +348,6 @@ function triggerEndGame(isVictory) {
     const sub = document.getElementById('game-sub-end');
     if(document.getElementById('final-tier')) document.getElementById('final-tier').innerText = `TIER ${currentTier}`;
     if(document.getElementById('final-score')) document.getElementById('final-score').innerText = score;
-    
-    // Cập nhật điểm của người chơi hiện tại vào dòng realtime trên Leaderboard
     if(document.getElementById('user-live-score')) document.getElementById('user-live-score').innerText = score;
 
     if (isVictory) {
@@ -372,7 +368,6 @@ function drawSpaceGrid() {
     ctx.strokeStyle = '#0f172a';
     ctx.lineWidth = 1;
     const gridSize = 100;
-    
     const startX = Math.floor(camera.x / gridSize) * gridSize;
     const startY = Math.floor(camera.y / gridSize) * gridSize;
 
@@ -474,13 +469,6 @@ function animate() {
     });
 }
 
-if(document.getElementById('restart-btn')) {
-    document.getElementById('restart-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        init();
-    });
-}
-
 // KHỞI CHẠY ĐỒ HỌA GAME NGAY LẬP TỨC
 init();
 animate();
@@ -489,12 +477,10 @@ animate();
 async function initBaseAppFrame() {
     if (window.FrameSDK) {
         try {
-            // Khai báo ứng dụng Frame đã sẵn sàng hiển thị
             window.FrameSDK.actions.ready();
             const context = await window.FrameSDK.context;
             
             if (context && context.user) {
-                // Nhận diện ví và username thầm lặng ngay khi vừa vào game
                 userWalletAddress = context.user.custodyAddress || context.user.verifiedAddresses?.[0];
                 username = context.user.username || "Pilot";
 
@@ -514,7 +500,7 @@ async function initBaseAppFrame() {
     }
 }
 
-// LOGIC XÁC THỰC VÍ 1 LẦN NỮA KHI CHẾT ĐỂ LƯU ĐIỂM (LEADINGBOARD)
+// XÁC THỰC VÍ GỬI ĐIỂM LEADERBOARD
 async function signAndSubmitScore() {
     if (!window.FrameSDK) {
         document.getElementById('sign-status').innerText = "Vui lòng chơi trên Base App để gửi điểm!";
@@ -525,14 +511,12 @@ async function signAndSubmitScore() {
 
     const statusText = document.getElementById('sign-status');
     const btnSubmit = document.getElementById('submit-leaderboard-btn');
-    statusText.innerText = "Đang yêu cầu ký xác thực ví...";
+    statusText.innerText = "Đang yêu cầu ký xác thực ví Base...";
     statusText.style.color = "#00ffff";
 
     try {
-        // Chuỗi tin nhắn bảo mật chứa thông tin điểm số để ký tên
         const messageToSign = `Base Core Universe - Pilot Score Verification\nWallet: ${userWalletAddress}\nScore: ${score}\nTimestamp: ${Date.now()}`;
         
-        // Gọi ví của ứng dụng mẹ Base App ký duyệt thầm lặng/hiện pop-up ký tin nhắn bảo mật
         const signature = await window.FrameSDK.actions.signMessage({
             message: messageToSign
         });
@@ -543,8 +527,6 @@ async function signAndSubmitScore() {
             btnSubmit.innerText = "✅ SCORE VERIFIED";
             statusText.innerText = "Xác thực thành công! Điểm đã cập nhật.";
             statusText.style.color = "#00ff66";
-
-            // THAY THẾ: Gửi biến `signature`, `score`, và `userWalletAddress` này về API backend của bạn tại đây để cập nhật cơ sở dữ liệu thật.
             console.log("Chữ ký mật on-chain:", signature);
         }
     } catch (err) {
@@ -554,10 +536,50 @@ async function signAndSubmitScore() {
     }
 }
 
-// Lắng nghe nút bấm Xác thực gửi điểm Leaderboard
 if(document.getElementById('submit-leaderboard-btn')) {
     document.getElementById('submit-leaderboard-btn').addEventListener('click', () => {
         signAndSubmitScore();
+    });
+}
+
+// KHÓA VÀ XÁC THỰC LẠI VÍ KHI BẤM NÚT REBOOT ENGINE
+if(document.getElementById('restart-btn')) {
+    document.getElementById('restart-btn').addEventListener('click', async (e) => {
+        e.stopPropagation();
+
+        // 1. CHẶN NẾU CHƯA KÝ XÁC THỰC ĐIỂM SỐ
+        if (window.FrameSDK && !hasSubmittedScore && score > 0) {
+            const statusText = document.getElementById('sign-status');
+            if (statusText) {
+                statusText.innerText = "⚠️ Bạn cần bấm 'VERIFY & SUBMIT SCORE' để lưu điểm trước khi chơi lượt mới!";
+                statusText.style.color = "#ff2a5f";
+            }
+            const glowBox = document.querySelector('.glow-box');
+            if(glowBox) {
+                glowBox.style.animation = 'none';
+                setTimeout(() => glowBox.style.animation = 'shake 0.3s', 10);
+            }
+            return; 
+        }
+
+        // 2. QUÉT LẠI TRẠNG THÁI VÍ BASE MAINNET XEM CÒN HỢP LỆ KHÔNG
+        if (window.FrameSDK) {
+            try {
+                const context = await window.FrameSDK.context;
+                if (!context || !context.user) {
+                    alert("Không tìm thấy thông tin ví Base App!");
+                    return;
+                }
+                userWalletAddress = context.user.custodyAddress || context.user.verifiedAddresses?.[0];
+                username = context.user.username || "Pilot";
+            } catch (err) {
+                console.error("Lỗi Reboot Wallet Sync:", err);
+                return;
+            }
+        }
+
+        // 3. OK -> KHỞI CHẠY LƯỢT MỚI
+        init();
     });
 }
 
