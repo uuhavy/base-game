@@ -40,6 +40,10 @@ const joystickStick = document.getElementById('joystick-stick');
 let userWalletAddress = null;
 let username = null;
 
+// ============================================================================
+// ĐỊA CHỈ SMART CONTRACT BẠN ĐÃ DEPLOY QUA REMIX LÊN BASE MAINNET
+// ============================================================================
+const SNAKE_FEES_CONTRACT = "ĐỊA_CHỈ_CONTRACT_SNAKEFEES_CỦA_BẠN_Ở_ĐÂY"; 
 const BASE_PROJECT_ID = "6a2c3407f51db91a3690bf16"; 
 
 class Player {
@@ -321,7 +325,7 @@ function init() {
     const btnReboot = document.getElementById('restart-btn');
     if(btnReboot) {
         btnReboot.disabled = false;
-        btnReboot.innerText = "REBOOT ENGINE & SAVE SCORE";
+        btnReboot.innerText = "REBOOT ENGINE (PAY FEE)";
     }
 
     player = new Player(); 
@@ -402,16 +406,13 @@ function drawSpaceGrid() {
     }
 }
 
-// BẢO VỆ VÒNG LẶP RENDER: KHÔNG ĐỂ CRASH KHI BIẾN CHƯA SẴN SÀNG
 function animate() {
     requestAnimationFrame(animate);
-    
-    // Luôn luôn clear nền để tránh mất HUD hoặc nháy màn hình
     ctx.fillStyle = 'rgba(2, 6, 23, 1)'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (gameOver || !player) {
-        drawSpaceGrid(); // Vẽ grid nền tĩnh kể cả khi chưa chơi để không bị trống màn hình
+        drawSpaceGrid(); 
         return;
     }
 
@@ -498,12 +499,10 @@ function animate() {
     });
 }
 
-// KHỞI TẠO ĐÚNG TRÌNH TỰ AN TOÀN TUYỆT ĐỐI
 player = new Player(); 
 init();
 animate();
 
-// ==================== TÍCH HỢP BASE APP DAPP FRAME SDK V2 ====================
 async function initBaseAppFrame() {
     const walletDisplay = document.getElementById('wallet-display');
     if (typeof window !== 'undefined' && window.FrameSDK && window.FrameSDK.context) {
@@ -532,7 +531,7 @@ async function initBaseAppFrame() {
     }
 }
 
-// THIẾT LẬP LẮT NGẦM LỖI TRÁNH TREO NÚT BẤM
+// ==================== TÍCH HỢP GIAO DỊCH CHẠY TRÊN BASE MAINNET ====================
 if(document.getElementById('restart-btn')) {
     document.getElementById('restart-btn').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -541,30 +540,45 @@ if(document.getElementById('restart-btn')) {
         const statusText = document.getElementById('sign-status');
         const btnReboot = document.getElementById('restart-btn');
 
-        if (!window.FrameSDK || !window.FrameSDK.actions || !window.FrameSDK.actions.signMessage) {
+        // BƯỚC 1: Nếu chạy môi trường ngoài -> Bypass thẳng vào game để test
+        if (!window.FrameSDK || !window.FrameSDK.actions || !window.FrameSDK.actions.sendTransaction) {
             init();
             return;
         }
 
-        if (score > 0) {
-            btnReboot.disabled = true;
-            if(statusText) {
-                statusText.innerText = "✍️ Đang gọi ví Base Mainnet ký xác thực...";
-                statusText.style.color = "#00ffff";
-            }
+        // BƯỚC 2: Khi có điểm số kết thúc game -> Gọi lệnh trả phí payGameEnd() on-chain
+        btnReboot.disabled = true;
+        if(statusText) {
+            statusText.innerText = "🚀 Đang kết nối ví Base Mainnet thanh toán phí game...";
+            statusText.style.color = "#00ffff";
+        }
 
-            try {
-                const messageToSign = `Base Core Universe - Pilot Score Verification\n` +
-                                      `Project Name: Base Core Universe\n` +
-                                      `Base Project ID: ${BASE_PROJECT_ID}\n` +
-                                      `Wallet: ${userWalletAddress || '0x000'}\n` +
-                                      `Score: ${score}\n` +
-                                      `Timestamp: ${Date.now()}`;
-                
-                await window.FrameSDK.actions.signMessage({ message: messageToSign });
-            } catch (err) {
-                console.warn("Bỏ qua lỗi để hồi sinh game:", err);
+        try {
+            // Chuỗi dữ liệu calldata hex mã hóa từ hàm payGameEnd()
+            const functionSelector = "0xef087a36"; 
+            
+            // Thực hiện gọi hàm gửi giao dịch chuyển ETH thật lên Base Mainnet qua Frame SDK v2
+            const txHash = await window.FrameSDK.actions.sendTransaction({
+                chainId: 8453, // ID mạng chính thức của Base Mainnet
+                to: SNAKE_FEES_CONTRACT,
+                value: "300000000000", // Phí 0.0000003 ETH dạng wei (chuẩn game rắn)
+                data: functionSelector,
+                dataSuffix: `0x${BASE_PROJECT_ID}` // Đính kèm Project ID ghi nhận Attribution
+            });
+
+            if (txHash && statusText) {
+                console.log("Giao dịch thành công. Tx Hash:", txHash);
+                statusText.innerText = "✅ Thanh toán thành công! Đang tái sinh tàu...";
+                statusText.style.color = "#00ff66";
             }
+        } catch (err) {
+            console.error("Giao dịch thất bại hoặc bị từ chối:", err);
+            if(statusText) {
+                statusText.innerText = "❌ Giao dịch bị hủy hoặc không đủ phí gas.";
+                statusText.style.color = "#ff2a5f";
+            }
+            btnReboot.disabled = false;
+            return; // Ngăn chặn không cho hồi sinh nếu giao dịch bị lỗi/hủy
         }
 
         btnReboot.disabled = false;
