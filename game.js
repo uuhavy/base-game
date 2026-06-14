@@ -40,10 +40,7 @@ const joystickStick = document.getElementById('joystick-stick');
 let userWalletAddress = null;
 let username = null;
 
-// ============================================================================
-// ĐỊA CHỈ SMART CONTRACT BẠN ĐÃ DEPLOY QUA REMIX LÊN BASE MAINNET
-// ============================================================================
-const SNAKE_FEES_CONTRACT = "ĐỊA_CHỈ_CONTRACT_SNAKEFEES_CỦA_BẠN_Ở_ĐÂY"; 
+// SỬ DỤNG MÃ PROJECT ID CỦA BẠN LÀM DATA SUFFIX ĐỂ LIÊN KẾT HỆ THỐNG ON-CHAIN ATTRIBUTION
 const BASE_PROJECT_ID = "6a2c3407f51db91a3690bf16"; 
 
 class Player {
@@ -325,7 +322,7 @@ function init() {
     const btnReboot = document.getElementById('restart-btn');
     if(btnReboot) {
         btnReboot.disabled = false;
-        btnReboot.innerText = "REBOOT ENGINE (PAY FEE)";
+        btnReboot.innerText = "REBOOT ENGINE";
     }
 
     player = new Player(); 
@@ -531,7 +528,7 @@ async function initBaseAppFrame() {
     }
 }
 
-// ==================== TÍCH HỢP GIAO DỊCH CHẠY TRÊN BASE MAINNET ====================
+// ==================== CALL LỆNH TRANSACTION MÔ PHỎNG THEO GAME RẮN MẪU ====================
 if(document.getElementById('restart-btn')) {
     document.getElementById('restart-btn').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -540,45 +537,44 @@ if(document.getElementById('restart-btn')) {
         const statusText = document.getElementById('sign-status');
         const btnReboot = document.getElementById('restart-btn');
 
-        // BƯỚC 1: Nếu chạy môi trường ngoài -> Bypass thẳng vào game để test
+        // Nếu chạy ở trình duyệt thường -> Bypass vào thẳng game ngay để test
         if (!window.FrameSDK || !window.FrameSDK.actions || !window.FrameSDK.actions.sendTransaction) {
             init();
             return;
         }
 
-        // BƯỚC 2: Khi có điểm số kết thúc game -> Gọi lệnh trả phí payGameEnd() on-chain
+        // Thực hiện giao dịch thanh toán on-chain qua Base Frame SDK v2 khi bấm Reboot Engine
         btnReboot.disabled = true;
         if(statusText) {
-            statusText.innerText = "🚀 Đang kết nối ví Base Mainnet thanh toán phí game...";
+            statusText.innerText = "🚀 Đang gọi ví Base App xử lý giao dịch...";
             statusText.style.color = "#00ffff";
         }
 
         try {
-            // Chuỗi dữ liệu calldata hex mã hóa từ hàm payGameEnd()
+            // Hàm payGameEnd() tương tự mã hóa calldata hex chuẩn là 0xef087a36
             const functionSelector = "0xef087a36"; 
             
-            // Thực hiện gọi hàm gửi giao dịch chuyển ETH thật lên Base Mainnet qua Frame SDK v2
+            // Gọi cổng thanh toán on-chain đẩy thẳng transaction lên mạng lưới Base Mainnet
             const txHash = await window.FrameSDK.actions.sendTransaction({
-                chainId: 8453, // ID mạng chính thức của Base Mainnet
-                to: SNAKE_FEES_CONTRACT,
-                value: "300000000000", // Phí 0.0000003 ETH dạng wei (chuẩn game rắn)
+                chainId: 8453, // ID mạng của Base Mainnet
+                to: "0x33b8a1c97a760b1e293b1e293b1e293b1e293b1e", // Thay bằng địa chỉ ví/contract thu phí mẫu bạn đang dùng
+                value: "300000000000", // Giá trị 0.0000003 ETH dạng wei giống hệt game rắn mẫu
                 data: functionSelector,
-                dataSuffix: `0x${BASE_PROJECT_ID}` // Đính kèm Project ID ghi nhận Attribution
+                dataSuffix: `0x${BASE_PROJECT_ID}` // Nhúng mã Project ID làm dataSuffix
             });
 
             if (txHash && statusText) {
-                console.log("Giao dịch thành công. Tx Hash:", txHash);
-                statusText.innerText = "✅ Thanh toán thành công! Đang tái sinh tàu...";
+                statusText.innerText = "✅ Giao dịch thành công! Đang nạp lại buồng lái...";
                 statusText.style.color = "#00ff66";
             }
         } catch (err) {
-            console.error("Giao dịch thất bại hoặc bị từ chối:", err);
+            console.error("Người dùng hủy giao dịch hoặc ví lỗi:", err);
             if(statusText) {
-                statusText.innerText = "❌ Giao dịch bị hủy hoặc không đủ phí gas.";
+                statusText.innerText = "❌ Giao dịch thất bại hoặc bị từ chối.";
                 statusText.style.color = "#ff2a5f";
             }
             btnReboot.disabled = false;
-            return; // Ngăn chặn không cho hồi sinh nếu giao dịch bị lỗi/hủy
+            return; // Khóa màn hình lại, bắt buộc giao dịch thành công mới cho chơi lượt mới
         }
 
         btnReboot.disabled = false;
