@@ -3,21 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Base Space Core - Mini Game</title>
+    <title>Base Core Defender</title>
     <link rel="stylesheet" href="style.css">
     
-    <meta property="og:title" content="Base Space Core" />
-    <meta property="og:description" content="Protect the Base Core and collect on-chain energy!" />
+    <meta property="og:title" content="Base Core Defender" />
+    <meta property="og:description" content="Protect the on-chain core, upgrade your weapons, and harvest Web3 energy!" />
     <meta property="og:image" content="https://base.org/images/base-logo.png" /> 
 </head>
 <body>
     <div id="game-container">
         <div id="ui-layer">
-            <div id="score-board">ENERGY: <span id="score-val">0</span></div>
+            <div id="hud">
+                <div class="hud-item">
+                    <span class="label">CORE HP</span>
+                    <div class="hp-bar-container">
+                        <div id="hp-bar-fill"></div>
+                    </div>
+                </div>
+                <div class="hud-item">
+                    <span class="label">ENERGY</span>
+                    <div id="score-val">0000</div>
+                </div>
+                <div class="hud-item">
+                    <span class="label">WEAPON</span>
+                    <div id="weapon-status" class="tier-1">TIER 1</div>
+                </div>
+            </div>
+
             <div id="game-over-screen" class="hidden">
-                <h2>CORE DESTROYED</h2>
-                <p>You collected <span id="final-score">0</span> Energy Gems</p>
-                <button id="restart-btn">RESTART ENGINE</button>
+                <div class="glow-box">
+                    <h2>CORE BREACHED</h2>
+                    <p class="sub-text">Hệ thống phòng thủ thất bại</p>
+                    <div class="result-box">
+                        <div class="result-label">Năng lượng thu thập</div>
+                        <div id="final-score">0</div>
+                    </div>
+                    <button id="restart-btn">REBOOT SYSTEM</button>
+                </div>
             </div>
         </div>
         <canvas id="gameCanvas"></canvas>
