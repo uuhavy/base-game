@@ -30,10 +30,9 @@ canvas {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 1; /* Nền game nằm dưới cùng */
+    z-index: 1;
 }
 
-/* LỚP UI BAO QUANH: ĐỂ AUTO ĐỂ KHÔNG CHẶN CLICK CỦA CÁC PHẦN TỬ CON */
 #ui-layer {
     position: absolute;
     top: 0;
@@ -44,7 +43,6 @@ canvas {
     z-index: 2;
 }
 
-/* THANH HUD HIỂN THỊ THÔNG TIN */
 #hud {
     position: absolute;
     top: 0;
@@ -56,7 +54,7 @@ canvas {
     padding: 20px;
     background: linear-gradient(to bottom, rgba(2,6,23,0.9) 0%, rgba(2,6,23,0) 100%);
     z-index: 10;
-    pointer-events: none; /* Không chặn click chuột xuống canvas khi đang chơi */
+    pointer-events: none;
 }
 
 .hud-item {
@@ -153,7 +151,11 @@ canvas {
     box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
 }
 
-/* MÀN HÌNH GAME OVER ĐÈ LÊN TRÊN CÙNG */
+/* THAY ĐỔI QUAN TRỌNG: SỬA LỚP HIDDEN ĐỂ ÉP ẨN MÀN HÌNH GAME OVER */
+#game-over-screen.hidden {
+    display: none !important;
+}
+
 #game-over-screen {
     position: absolute;
     top: 0;
@@ -166,15 +168,10 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: center;
-    pointer-events: auto; /* Bắt buộc nhận tương tác click */
-    z-index: 999; /* Đảm bảo đè lên toàn bộ HUD và Canvas */
+    pointer-events: auto; 
+    z-index: 999; 
 }
 
-#game-over-screen.hidden {
-    display: none !important;
-}
-
-/* HỘP POPUP CHÍNH */
 .glow-box {
     background: rgba(15, 23, 42, 0.95);
     border: 2px solid #334155;
@@ -265,7 +262,6 @@ canvas {
     margin-top: 5px;
 }
 
-/* NÚT BẤM REBOOT ĐƯỢC CHĂM CHÚT BẬT CON TRỎ CLICK */
 #restart-btn {
     width: 100%;
     background: linear-gradient(135deg, #0052FF 0%, #003db3 100%);
@@ -278,7 +274,7 @@ canvas {
     border-radius: 8px;
     cursor: pointer;
     margin-top: 10px;
-    pointer-events: auto; /* Mở khóa click tuyệt đối */
+    pointer-events: auto; 
     position: relative;
     z-index: 1000;
 }
